@@ -3,9 +3,10 @@ using Backapi.DTOs;
 using Backapi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // ✅ Required for .Include()
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Linq; // Added for string manipulation
 
 namespace Backapi.Controllers
 {
@@ -30,18 +31,19 @@ namespace Backapi.Controllers
             var hid = GetHospitalIdFromClaim();
 
             var doctors = await _db.Doctors
-                .Include(d => d.Hospital) // 👈 THIS LINE FIXES THE NULL ISSUE
+                .Include(d => d.Hospital)
                 .Where(d => d.HospitalId == hid)
                 .ToListAsync();
 
             return Ok(doctors);
         }
 
-        // ... (Keep your HttpPost, HttpPut, and HttpDelete exactly as they are) ...
         [HttpPost]
         public async Task<IActionResult> CreateDoctor([FromBody] DoctorDto dto)
         {
             var hid = GetHospitalIdFromClaim();
+
+            // 1. Standard Doctor Creation Logic
             var doctor = new Doctor
             {
                 HospitalId = hid,
@@ -50,8 +52,43 @@ namespace Backapi.Controllers
                 LicenceNumber = dto.LicenceNumber,
                 PhoneNumber = dto.PhoneNumber
             };
+
             _db.Doctors.Add(doctor);
+
+            // 2. NEW FEATURE: Auto-create Facility based on Specialization
+            if (!string.IsNullOrWhiteSpace(dto.Specialization))
+            {
+                var cleanSpec = dto.Specialization.Trim();
+
+                // Check if this facility already exists for this hospital (Case insensitive check)
+                var existingFacility = await _db.Facilities
+                    .FirstOrDefaultAsync(f => f.HospitalId == hid && f.FacilityName.ToLower() == cleanSpec.ToLower());
+
+                if (existingFacility == null)
+                {
+                    // Facility doesn't exist, create it
+                    var newFacility = new Facility
+                    {
+                        HospitalId = hid,
+                        FacilityName = cleanSpec, // Use the proper casing from input
+                        Availability = true       // Logic: If we just hired a doctor for this, it's available
+                    };
+                    _db.Facilities.Add(newFacility);
+                }
+                else
+                {
+                    // Optional: If the facility exists but was marked Unavailable (false), 
+                    // we should probably set it to True since we just added a doctor.
+                    if (existingFacility.Availability == false)
+                    {
+                        existingFacility.Availability = true;
+                    }
+                }
+            }
+
+            // 3. Save both Doctor and Facility changes in one transaction
             await _db.SaveChangesAsync();
+
             return Ok(doctor);
         }
 
@@ -62,10 +99,15 @@ namespace Backapi.Controllers
             var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.DoctorId == id && d.HospitalId == hid);
             if (doctor == null) return NotFound();
 
+            // Note: If you change specialization here, you might want to add logic 
+            // to add the NEW specialization to facilities as well, 
+            // but for now, we keep original features strictly as requested.
+
             doctor.Name = dto.Name;
             doctor.Specialization = dto.Specialization;
             doctor.LicenceNumber = dto.LicenceNumber;
             doctor.PhoneNumber = dto.PhoneNumber;
+
             await _db.SaveChangesAsync();
             return Ok(doctor);
         }
