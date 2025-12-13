@@ -33,5 +33,7 @@ namespace Backapi.Data
                 .HasForeignKey(f => f.HospitalId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
+
+        public DbSet<EmergencyRequest> EmergencyRequests { get; set; }
     }
 }
