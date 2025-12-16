@@ -1,6 +1,7 @@
 ﻿using Backapi.Data;
 using Backapi.Models;
 using Backapi.DTOs;
+using Backapi.Services; // Ensure you have this namespace
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
@@ -12,7 +13,13 @@ namespace Backapi.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly AppDbContext _db;
-        public PatientsController(AppDbContext db) => _db = db;
+        private readonly IAuthService _authService; // ✅ Inject Security Service
+
+        public PatientsController(AppDbContext db, IAuthService authService)
+        {
+            _db = db;
+            _authService = authService;
+        }
 
         // ✅ 1. Get All Patients
         [HttpGet]
@@ -27,44 +34,75 @@ namespace Backapi.Controllers
             return Ok(p);
         }
 
-        // ✅ 3. NEW: Get Patient by Phone Number (Crucial for User Dashboard)
-        [HttpGet("by-phone/{phoneNumber}")]
-        public async Task<IActionResult> GetByPhone(string phoneNumber)
+        // ✅ 3. NEW: Get Patient by Email (For Dashboard Profile Loading)
+        [HttpGet("by-email/{email}")]
+        public async Task<IActionResult> GetByEmail(string email)
         {
-            var p = await _db.Patients.FirstOrDefaultAsync(x => x.PhoneNumber == phoneNumber);
-
-            if (p == null)
-                return NotFound(new { message = "Patient not found with this number" });
-
+            var p = await _db.Patients.FirstOrDefaultAsync(x => x.Email == email);
+            if (p == null) return NotFound(new { message = "Patient not found" });
             return Ok(p);
         }
 
-        // ✅ 4. Create New Patient (Signup)
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] PatientDto dto)
+        // ✅ 4. REGISTER (Sign Up with Email & Password)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] PatientRegisterDto dto)
         {
-            // Optional: Check if phone already exists
-            if (await _db.Patients.AnyAsync(x => x.PhoneNumber == dto.PhoneNumber))
+            // 1. Validation: Check if Email exists
+            if (await _db.Patients.AnyAsync(x => x.Email == dto.Email))
             {
-                return BadRequest(new { message = "Phone number already registered" });
+                return BadRequest(new { message = "Email already registered" });
             }
 
-            var p = new Patient
+            // 2. Hash Password & Create Patient
+            var patient = new Patient
             {
                 Name = dto.Name,
                 Age = dto.Age,
                 PhoneNumber = dto.PhoneNumber,
                 Gender = dto.Gender,
-                BloodGroup = dto.BloodGroup
+                BloodGroup = dto.BloodGroup,
+
+                Email = dto.Email,
+                // Hashing logic from your existing service
+                PasswordHash = _authService.HashPassword(dto.Password)
             };
-            _db.Patients.Add(p);
+
+            _db.Patients.Add(patient);
             await _db.SaveChangesAsync();
-            return Ok(p);
+
+            return Ok(new { message = "Registration Successful", patientId = patient.PatientId });
         }
 
-        // ✅ 5. Update Patient (Edit Profile)
+        // ✅ 5. LOGIN (Authenticate User)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] PatientLoginDto dto)
+        {
+            // 1. Find User by Email
+            var patient = await _db.Patients.FirstOrDefaultAsync(x => x.Email == dto.Email);
+
+            if (patient == null)
+                return Unauthorized(new { message = "User not registered" });
+
+            // 2. Verify Password using Hash
+            if (!_authService.VerifyPassword(dto.Password, patient.PasswordHash))
+                return Unauthorized(new { message = "Invalid Email or Password" });
+
+            // 3. Login Success
+            return Ok(new
+            {
+                message = "Login Successful",
+                user = new
+                {
+                    Name = patient.Name,
+                    Email = patient.Email,
+                    Phone = patient.PhoneNumber
+                }
+            });
+        }
+
+        // ✅ 6. Update Profile
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] PatientDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] PatientRegisterDto dto)
         {
             var p = await _db.Patients.FindAsync(id);
             if (p == null) return NotFound();
@@ -73,15 +111,15 @@ namespace Backapi.Controllers
             p.Age = dto.Age;
             p.Gender = dto.Gender;
             p.BloodGroup = dto.BloodGroup;
-            // Note: We usually don't update PhoneNumber if it's their login ID, 
-            // but we can leave it here if you want to allow it.
             p.PhoneNumber = dto.PhoneNumber;
+
+            // Note: We are ignoring password updates here to keep it simple for now
 
             await _db.SaveChangesAsync();
             return Ok(p);
         }
 
-        // ✅ 6. Delete Patient
+        // ✅ 7. Delete Patient
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

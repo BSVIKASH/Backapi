@@ -11,5 +11,8 @@ namespace Backapi.Models
         [Required] public string PhoneNumber { get; set; }
         [Required] public string Gender { get; set; }
         [Required] public string BloodGroup { get; set; }
+
+        public string Email { get; set; }
+        public string PasswordHash { get; set; }
     }
 }
