@@ -27,5 +27,13 @@ namespace Backapi.Controllers
 
             return Ok(results);
         }
+
+        [HttpGet("by-email/{email}")]
+        public async Task<IActionResult> GetByEmail(string email)
+        {
+            var hospital = await _hospitalRepo.GetByEmailAsync(email);
+            if (hospital == null) return NotFound("Hospital not found");
+            return Ok(hospital);
+        }
     }
 }

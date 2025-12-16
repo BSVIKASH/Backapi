@@ -12,5 +12,6 @@ namespace Backapi.Repositories
 
         // The Smart Search Method
         Task<IEnumerable<Hospital>> GetHospitalsBySpecialtyAsync(string specialty);
+       
     }
 }

@@ -28,6 +28,7 @@ namespace Backapi.Repositories
         public async Task<Hospital> GetByEmailAsync(string email)
             => await _db.Hospitals.FirstOrDefaultAsync(h => h.Email == email);
 
+       
         public async Task<Hospital> GetByIdAsync(int id)
             // Changed to match your Model's Primary Key 'HospitalId'
             => await _db.Hospitals.FirstOrDefaultAsync(h => h.HospitalId == id);
@@ -62,6 +63,8 @@ namespace Backapi.Repositories
             );
 
             return await query.ToListAsync();
+
+
         }
     }
 }
