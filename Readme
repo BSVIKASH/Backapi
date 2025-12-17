@@ -1,0 +1,14 @@
+Suvera, a real-time digital healthcare ecosystem designed to streamline emergency response by connecting patients and hospitals instantly. The system provides secure user authentication, symptom-based emergency assistance, optimized osm routing algorithm routing, nearby hospital discovery, first-aid guidance, and an SOS alert feature. Hospitals access an admin panel to facilities, emergency requests, manage beds, doctor availability, with real-time updates. By integrating smart navigation, verified hospital resources, and rapid communication channels. Suvera enables a transparent, efficient, and life-saving emergency care experience for both users and hospitals.
+
+Primary Backend (Business Logic & Data):
+•	Framework: ASP.NET Core Web API (C# .NET  version 8).
+•	ORM (Object-Relational Mapper): Entity Framework Core (EF Core) for database interactions.
+•	Architecture: Repository Pattern (Controllers → Services → Repositories → Database).
+•	Authentication: JWT (JSON Web Tokens) & Custom Hashing
+
+Change the ConnectionString and the host as well as source names at appsettings.json , appsettings.Development.json, AppDbContextFactory.cs (inside Data)
+
+ Database Used
+•	Database System: Microsoft SQL Server (MSSQL).
+•	Management Tool: SQL Server Management Studio (SSMS).
+•	Core Tables: Patients, Hospitals, Doctors, Facilities, EmergencyRequests
