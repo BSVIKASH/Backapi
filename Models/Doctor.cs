@@ -9,14 +9,15 @@ namespace Backapi.Models
         public int DoctorId { get; set; }
 
         [Required]
-        [ForeignKey(nameof(Hospital))]
+        [ForeignKey("Hospital")]
         public int HospitalId { get; set; }
-        public Hospital Hospital { get; set; }
+        public Hospital Hospital { get; set; } // Nav prop
 
         [Required] public string Name { get; set; }
         [Required] public string Specialization { get; set; }
         [Required] public string LicenceNumber { get; set; }
         [Required] public string PhoneNumber { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

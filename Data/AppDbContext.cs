@@ -11,6 +11,7 @@ namespace Backapi.Data
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Facility> Facilities { get; set; }
         public DbSet<Patient> Patients { get; set; }
+        public DbSet<EmergencyRequest> EmergencyRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,7 +34,5 @@ namespace Backapi.Data
                 .HasForeignKey(f => f.HospitalId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
-
-        public DbSet<EmergencyRequest> EmergencyRequests { get; set; }
     }
 }

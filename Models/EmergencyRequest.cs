@@ -7,11 +7,17 @@ namespace Backapi.Models
     {
         [Key]
         public int RequestId { get; set; }
+
+        [Required]
         public int HospitalId { get; set; }
-        public string PatientName { get; set; }
-        public string ContactNumber { get; set; }
-        public string SymptomDescription { get; set; }
+
+        // Use ? because DB allows NULL for these
+        public string? PatientName { get; set; }
+        public string? ContactNumber { get; set; }
+        public string? SymptomDescription { get; set; }
+
         public string Status { get; set; } = "Pending";
+
         public DateTime RequestTime { get; set; } = DateTime.UtcNow;
     }
 }
